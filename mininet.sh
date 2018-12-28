@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# PREREQUISITS...
+##### PREREQUISITS #####
+
 # ~/Documents/csc4006/docker-mininet
 # ~/Documents/csc4006/traffic
 # docker & docker group
@@ -26,5 +27,9 @@ docker run -it --rm --privileged \
             -v /lib/modules:/lib/modules \
             -v ~/Documents/csc4006/traffic:/traffic/ mininet
 
-# Run mininet topology
-# mn --topo single,10 --mac --controller=remote,ip=$DOCKER_HOST,port=6653 --controller=remote,ip=$DOCKER_HOST,port=6654 --switch ovsk
+##### POSTREQUISITS #####
+# # Run mininet topology
+# mn --topo single,10 -x --mac --controller=remote,ip=$DOCKER_HOST,port=6653 --controller=remote,ip=$DOCKER_HOST,port=6654 --switch ovsk
+#
+# # Capture traffic on mirror port 10
+# timeout 5s tcpdump -w /traffic/capture/file.pcap -i h10-eth0
