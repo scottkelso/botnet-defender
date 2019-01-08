@@ -56,18 +56,18 @@ def extract_device_packet_size(device_packets):
     return total_size
 
 
-def extract_protocol(packet):
+def extract_protocol(record):
     '''
     Extracts the protocol used in the session from the first packet
 
     Args:
-        dict: session tuple containing all the packets of the session
+        record: (datetime, dst, data)
 
     Returns:
-        protocol: Protocol number used in the session
+        protocol: Protocol number used in the packet
     '''
 
-    protocol = dict[0][1][46:48]
+    protocol = record[2][46:48]
     return protocol
 
 

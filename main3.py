@@ -1,9 +1,10 @@
 from utils.reader import packetizer
 from collections import OrderedDict
 from utils.pcap_utils import get_ip_port
-from utils.packet_helper import is_protocol, is_external
+from utils.packet_helper import is_protocol, is_external, extract_macs
 import numpy as np
 
+print("Launching packetizer...")
 packet_dict = packetizer("data/IoT_Dataset_OSScan__00001_20180521140502.pcap")
 # grouped_packets = group_by_device("data/IoT_Dataset_OSScan__00001_20180521140502.pcap")
 
@@ -44,10 +45,10 @@ for src, data in working_dict.items():
     dst = data[1]
     packets = data[2]
 
-    src_address, src_port = get_ip_port(src)
-
-    for record in packets:
-        dst_address, dst_port = get_ip_port(dst)
+    for record in data:
+        src_mac, dst_mac = extract_macs(record[2])
+        src_address, src_port = get_ip_port(src_mac)
+        dst_address, dst_port = get_ip_port(dst_mac)
         
         num_packets += 1
         num_external += is_external(src_address, dst_address)
@@ -66,20 +67,22 @@ for src, data in working_dict.items():
     extra_features[1] = num_tcp_sess / num_packets
     extra_features[2] = num_udp_sess / num_packets
     extra_features[3] = num_icmp_sess / num_packets
+
+    num_ports = np.concatenate(
+        (
+            num_src_port,
+            num_dst_port,
+        ),
+        axis=0
+    )
         
     feature_vector = np.concatenate(
         (
-            num_packets,
-            num_external,
-            num_tcp_sess,
-            num_udp_sess,
-            num_icmp_sess,
-            num_src_port,
-            num_dst_port,
+            np.asarray(num_ports),
             extra_features
         ), 
         axis=0
     )
         
     X.append(feature_vector)
-    y.append("Reconnaissance")
+    y.append('Reconnaissance')
