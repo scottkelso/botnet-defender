@@ -41,27 +41,26 @@ for src, data in working_dict.items():
     num_udp_sess = 0
     num_icmp_sess = 0
 
+    datetime = data[0]
+    dst = data[1]
+    packets = data[2]
+
     for record in data:
-
-        datetime = record[0]
-        dst = record[1]
-        packets = record[2]
-
-        # src_mac, dst_mac = extract_macs(record[2])
-        # src_address, src_port = get_ip_port(src_mac)
-        # dst_address, dst_port = get_ip_port(dst_mac)
+        src_mac, dst_mac = extract_macs(record[2])
+        src_address, src_port = get_ip_port(src_mac)
+        dst_address, dst_port = get_ip_port(dst_mac)
         
         num_packets += 1
-        # num_external += is_external(src_address, dst_address)
+        num_external += is_external(src_address, dst_address)
         num_tcp_sess += is_protocol(record, '06')
         num_udp_sess += is_protocol(record, '11')
         num_icmp_sess += is_protocol(record, '01')
         
-        # if int(src_port) < max_port:
-        #     num_src_port[int(src_port)] += 1
-        #
-        # if int(dst_port) < max_port:
-        #     num_dst_port[int(dst_port)] += 1
+        if int(src_port) < max_port:
+            num_src_port[int(src_port)] += 1
+
+        if int(dst_port) < max_port:
+            num_dst_port[int(dst_port)] += 1
 
     extra_features = [0] * 4
     extra_features[0] = num_external / num_packets
@@ -69,23 +68,21 @@ for src, data in working_dict.items():
     extra_features[2] = num_udp_sess / num_packets
     extra_features[3] = num_icmp_sess / num_packets
 
-    # num_ports = np.concatenate(
-    #     (
-    #         num_src_port,
-    #         num_dst_port,
-    #     ),
-    #     axis=0
-    # )
+    num_ports = np.concatenate(
+        (
+            num_src_port,
+            num_dst_port,
+        ),
+        axis=0
+    )
         
-    # feature_vector = np.concatenate(
-    #     (
-    #         np.asarray(num_ports),
-    #         extra_features
-    #     ),
-    #     axis=0
-    # )
+    feature_vector = np.concatenate(
+        (
+            np.asarray(num_ports),
+            extra_features
+        ), 
+        axis=0
+    )
         
-    X.append(extra_features)
+    X.append(feature_vector)
     y.append('Reconnaissance')
-    # This is no good for training - we don't know ground truth
-    # Therefore use CSV
