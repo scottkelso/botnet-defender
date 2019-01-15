@@ -47,6 +47,8 @@ for src, data in working_dict.items():
         dst = record[1]
         packets = record[2]
 
+        # CSV's have all ['smac', 'dmac'] as 'nan'
+
         # src_mac, dst_mac = extract_macs(record[2])
         # src_address, src_port = get_ip_port(src_mac)
         # dst_address, dst_port = get_ip_port(dst_mac)
