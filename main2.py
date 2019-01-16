@@ -1,6 +1,7 @@
 from sklearn import svm
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import f1_score
+from sklearn.metrics import f1_score, accuracy_score
+
 
 import pandas as pd
 import numpy as np
@@ -10,19 +11,9 @@ import struct
 
 
 def ip2int(addr):
-    address_int = ''
+    address_int = 'DROP'
     try:
         address_int = struct.unpack("!I", socket.inet_aton(addr))[0]
-    except OSError:
-        print('Unable to parse ip address ' + addr)
-    return address_int
-
-
-def can_ip2int(addr):
-    address_int = False
-    try:
-        address_int = struct.unpack("!I", socket.inet_aton(addr))[0]
-        address_int = True
     except OSError:
         print('Unable to parse ip address ' + addr)
     return address_int
@@ -45,46 +36,63 @@ def read_csv(path):
          'soui',
          'dmac',
          'smac',
-         'seq'], axis=1
+         'seq',
+         'flgs'], axis=1
     )
 
-    return rows, labels
+    return rows
 
 
 def preprocessing(df):
-    # Drop all ipv6 addressed packets
-    df = df.drop(df[df.proto == 'ipv6-icmp'].index)
+    print("Preprocessing Data...")
+    # Drop all ipv6 and icmp packets
+    # df = df[~df.proto.str.contains("ipv6")]
+    # df = df[~df.proto.str.contains("icmp")]
+    # df = df.reset_index(drop=True)
+
+    # # TODO(jk): Make work for none tcp packets
+    # Select only tcp packets
+    df = df[df['proto'].str.contains("tcp")]
+    df = df.drop(['proto'], axis=1)
+    df = df.reset_index(drop=True)
 
     # Convert ip addresses to int
     ip_address_labels = ['saddr', 'daddr', 'srcid']
     # TODO(jk): For loop
-    df['saddr'] = df['saddr'].apply(lambda x: ip2int(x))
-    df['daddr'] = df['daddr'].apply(lambda x: ip2int(x))
-    df['srcid'] = df['srcid'].apply(lambda x: ip2int(x))
+    df['saddr'] = df['saddr'].apply(ip2int)
+    df['daddr'] = df['daddr'].apply(ip2int)
+    df['srcid'] = df['srcid'].apply(ip2int)
+
+    # df.proto = df.proto.astype('category').cat.codes
+    df.dir = df.dir.astype('category').cat.codes
+    df.state = df.state.astype('category').cat.codes
 
     return df
 
 
-data, labels = read_csv('data/OS_Scan.csv')
-
-# # https://stackoverflow.com/questions/13851535/how-to-delete-rows-from-a-pandas-dataframe-based-on-a-conditional-expression
-# data[data['saddr'].map(can_ip2int)]
-
+data = read_csv('data/OS_Scan.csv')
 data = preprocessing(data)
 
-# Split the data into training, validation, and testing sets
-X_train, X_test, y_train, y_test = train_test_split(data, labels, test_size=0.2, random_state=0)
+X = data.drop(columns=['category'])
+y = data['category']
+print(data['category'].value_counts())
 
+
+# Split the data into training, validation, and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
+
+print("Training Model...")
 clf = svm.SVC(gamma='scale', probability=True, max_iter=1000)
-# clf.fit(data, labels)
-#
+clf.fit(X_train, y_train)
+
 # # Evaulate the model on the augmented test data
 # means = X_train.mean(axis=0)
 # stds = X_train.std(axis=0)
 #
 # X_test_input = X_test - np.expand_dims(means, 0)
 # X_test_input /= np.expand_dims(stds, 0)
-#
-# predictions = clf.predict(X_test)
+
+predictions = clf.predict(X_test)
 # print("F1 score:", f1_score(X_test, predictions, average='weighted'))
 
+print("Accuracy:", accuracy_score(y_test, predictions))
