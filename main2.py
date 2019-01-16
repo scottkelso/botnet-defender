@@ -1,7 +1,7 @@
 from sklearn import svm
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import f1_score, accuracy_score
-
+from joblib import dump
 
 import pandas as pd
 import numpy as np
@@ -96,3 +96,5 @@ predictions = clf.predict(X_test)
 # print("F1 score:", f1_score(X_test, predictions, average='weighted'))
 
 print("Accuracy:", accuracy_score(y_test, predictions))
+
+dump(clf, 'filename.joblib')
