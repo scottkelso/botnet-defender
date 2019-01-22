@@ -27,13 +27,8 @@ docker run -it --rm --privileged \
             -v /lib/modules:/lib/modules \
             -v ~/Documents/csc4006/traffic:/traffic/ mininet
 
+
 ##### POSTREQUISITS #####
+
 # # Run mininet topology
 # mn --topo single,10 -x --mac --controller=remote,ip=$DOCKER_HOST,port=6653 --controller=remote,ip=$DOCKER_HOST,port=6654 --switch ovsk
-#
-# # Capture traffic on mirror port 10
-# timeout 5s tcpdump -w /traffic/capture/file.pcap -i h10-eth0
-# argus -i h10-eth0 -P 561 -d -w /traffic/test.argus
-#
-# # Replay traffic on host
-# tcpreplay -i h5-eth0 -x 0.7 -l 3 --unique-ip /traffic/some.pcap
