@@ -73,10 +73,11 @@ def preprocessing(df):
 data = read_csv('data/OS_Scan.csv')
 data = preprocessing(data)
 
-X = data.drop(columns=['category'])
-y = data['category']
+print("Ensure that classes are balanced...")
 print(data['category'].value_counts())
 
+X = data.drop(columns=['category'])
+y = data['category']
 
 # Split the data into training, validation, and testing sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
