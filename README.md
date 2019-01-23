@@ -19,11 +19,12 @@ The system will consist of the following elements...
 (See `./mininet.sh`)
 
 # Related Work
-https://github.com/scottkelso/sdn-security
-https://github.com/a-blaise/split-and-merge
-https://github.com/CyberReboot/PoseidonML
-https://github.com/CyberReboot/poseidon
+* https://github.com/scottkelso/sdn-security
+* https://github.com/a-blaise/split-and-merge
+* https://github.com/CyberReboot/PoseidonML
+* https://github.com/CyberReboot/poseidon
+* https://github.com/ianwelch/faucet-bro/
 
 # Data
-http://mawi.wide.ad.jp/mawi/samplepoint-F/2016/
-https://www.unsw.adfa.edu.au/unsw-canberra-cyber/cybersecurity/ADFA-NB15-Datasets/bot_iot.php
+* http://mawi.wide.ad.jp/mawi/samplepoint-F/2016/
+* https://www.unsw.adfa.edu.au/unsw-canberra-cyber/cybersecurity/ADFA-NB15-Datasets/bot_iot.php
