@@ -1,4 +1,4 @@
-from sklearn import svm
+from sklearn import neighbors
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import f1_score, accuracy_score
 from sklearn.utils import resample
@@ -23,11 +23,6 @@ def ip2int(addr):
 
 def int2ip(addr):
     return socket.inet_ntoa(struct.pack("!I", addr))
-
-
-# df['saddr'] = df['saddr'].apply(ip2int)
-# df['daddr'] = df['daddr'].apply(ip2int)
-# df['srcid'] = df['srcid'].apply(ip2int)
 
 
 def load_os_csv():
@@ -174,19 +169,19 @@ y = np.concatenate((yos, yser), axis=0)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
 
 print("Training SVC Model...")
-clf = svm.SVC(gamma='scale', probability=True, max_iter=1000)
+clf = neighbors.KNeighborsClassifier(15, weights='uniform')
 clf.fit(X_train, y_train)
 
-# # Evaulate the model on the augmented test data
-# means = X_train.mean(axis=0)
-# stds = X_train.std(axis=0)
-#
-# X_test_input = X_test - np.expand_dims(means, 0)
-# X_test_input /= np.expand_dims(stds, 0)
+# # # Evaulate the model on the augmented test data
+# # means = X_train.mean(axis=0)
+# # stds = X_train.std(axis=0)
+# #
+# # X_test_input = X_test - np.expand_dims(means, 0)
+# # X_test_input /= np.expand_dims(stds, 0)
 
 predictions = clf.predict(X_test)
 # print("F1 score:", f1_score(X_test, predictions, average='weighted'))
 
 print("Accuracy:", accuracy_score(y_test, predictions))
 
-dump(clf, 'svm.joblib')
+dump(clf, 'knn.joblib')

@@ -11,6 +11,14 @@ SVM
 * https://scikit-learn.org/stable/auto_examples/svm/plot_svm_scale_c.htmlRidge Regularisation vs. Lasso
 
 
+# Machine Learning Tuning
+| Algorithm   | Accuracy      | Time         |
+|-------------|:-------------:|-------------:|
+| SVM         |               |              |
+| KNN         | 0.997         |              |
+|             |               |              |
+
+
 # Helpful Articles
 * https://elitedatascience.com/imbalanced-classes
 * https://docs.python.org/3/library/configparser.html
