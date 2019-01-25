@@ -2,7 +2,7 @@ from sklearn import svm
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import f1_score, accuracy_score
 from sklearn.utils import resample
-from sklearn.preprocessing import OrdinalEncoder
+from sklearn.preprocessing import OrdinalEncoder, StandardScaler, MinMaxScaler
 from joblib import dump
 
 import pandas as pd
@@ -61,7 +61,8 @@ def load_os_csv():
     df.sport = pd.to_numeric(df.sport.fillna(-1))
     df.dport = pd.to_numeric(df.dport.fillna(-1))
 
-    # df = downsample(df)
+    print("Downsampling...")
+    df = downsample(df)
 
     data = df.drop(columns=['category'])
     labels = df['category']
@@ -71,6 +72,10 @@ def load_os_csv():
     # TODO(jk): Refactor obj
     enc = OrdinalEncoder()
     data = enc.fit_transform(data, y=labels)
+
+    print("Normalizing data...")
+    scaler = StandardScaler()
+    data = scaler.fit_transform(data, y=labels)
 
     print("Finished loading CSV.\n")
 
@@ -114,7 +119,8 @@ def load_service_csv():
     df.sport = pd.to_numeric(df.sport.fillna(-1))
     df.dport = pd.to_numeric(df.dport.fillna(-1))
 
-    # df = downsample(df)
+    print("Downsampling...")
+    df = downsample(df)
 
     data = df.drop(columns=['category'])
     labels = df['category']
@@ -125,14 +131,18 @@ def load_service_csv():
     enc = OrdinalEncoder()
     data = enc.fit_transform(data, y=labels)
 
+    print("Normalizing data...")
+    scaler = StandardScaler()
+    data = scaler.fit_transform(data, y=labels)
+
     print("Finished loading CSV.\n")
 
     return data, labels
 
 
 def downsample(df):
-    print("Before resampling...")
-    print(df.category.value_counts(), "\n")
+    # print("Before resampling...")
+    # print(df.category.value_counts(), "\n")
 
     # Separate majority and minority classes
     df_majority = df[df.category == "Reconnaissance"]
@@ -147,9 +157,9 @@ def downsample(df):
     # Combine minority class with downsampled majority class
     df_downsampled = pd.concat([df_majority_downsampled, df_minority])
 
-    # Display new class counts
-    print("After resampling...")
-    print(df_downsampled.category.value_counts(), "\n")
+    # # Display new class counts
+    # print("After resampling...")
+    # print(df_downsampled.category.value_counts(), "\n")
 
     return df_downsampled
 
@@ -167,16 +177,16 @@ print("Training SVC Model...")
 clf = svm.SVC(gamma='scale', probability=True, max_iter=1000)
 clf.fit(X_train, y_train)
 
-# # # Evaulate the model on the augmented test data
-# # means = X_train.mean(axis=0)
-# # stds = X_train.std(axis=0)
-# #
-# # X_test_input = X_test - np.expand_dims(means, 0)
-# # X_test_input /= np.expand_dims(stds, 0)
+# # Evaulate the model on the augmented test data
+# means = X_train.mean(axis=0)
+# stds = X_train.std(axis=0)
 #
-# predictions = clf.predict(X_test)
-# # print("F1 score:", f1_score(X_test, predictions, average='weighted'))
-#
-# print("Accuracy:", accuracy_score(y_test, predictions))
-#
-# dump(clf, 'filename.joblib')
+# X_test_input = X_test - np.expand_dims(means, 0)
+# X_test_input /= np.expand_dims(stds, 0)
+
+predictions = clf.predict(X_test)
+# print("F1 score:", f1_score(X_test, predictions, average='weighted'))
+
+print("Accuracy:", accuracy_score(y_test, predictions))
+
+dump(clf, 'svm.joblib')
