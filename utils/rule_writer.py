@@ -10,6 +10,7 @@ class RuleWriter:
 
     def __init__(self, config_file):
         self.config_file = config_file
+        self.blacklist_file = '../main/blacklist.txt'
 
     def write_rules(self):
 
@@ -45,7 +46,7 @@ class RuleWriter:
 
         return True
 
-    def blacklist_ip(self, ip):
+    def block_ip(self, ip):
 
         try:
             stream = open(self.config_file, 'r')
@@ -83,4 +84,25 @@ class RuleWriter:
             print(str(e))
             return False
 
+        return True
+
+    def read_blacklist(self):
+        with open(self.blacklist_file, 'r') as f:
+            blacklist = f.readlines()
+        blacklist = [x.strip() for x in blacklist]
+        if len(blacklist) > 0:
+            blacklist.pop()
+        return blacklist
+
+    def blacklist_ip(self, ip):
+        blacklist = self.read_blacklist()
+        if ip not in blacklist:
+            with open(self.blacklist_file, 'a') as f:
+                f.write(ip+'\n')
+            return True
+        else:
+            return False
+
+    def flush_blacklist(self):
+        open(self.blacklist_file, 'w').close()
         return True

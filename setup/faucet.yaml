@@ -9,47 +9,47 @@ dps:
     hardware: Open vSwitch
     interfaces:
       1:
-        acl_in: mir
+        acls_in: [block, mir]
         description: host1
         name: h1
         native_vlan: demo
       2:
-        acl_in: mir
+        acls_in: [block, mir]
         description: host2
         name: h2
         native_vlan: demo
       3:
-        acl_in: mir
+        acls_in: [block, mir]
         description: host3
         name: h3
         native_vlan: demo
       4:
-        acl_in: mir
+        acls_in: [block, mir]
         description: host4
         name: h4
         native_vlan: demo
       5:
-        acl_in: mir
+        acls_in: [blocked, mir]
         description: host5
         name: h5
         native_vlan: demo
       6:
-        acl_in: mir
+        acls_in: [block, mir]
         description: host6
         name: h6
         native_vlan: demo
       7:
-        acl_in: mir
+        acls_in: [block, mir]
         description: host7
         name: h7
         native_vlan: demo
       8:
-        acl_in: mir
+        acls_in: [block, mir]
         description: host8
         name: h8
         native_vlan: demo
       9:
-        acl_in: mir
+        acls_in: [block, mir]
         description: host9
         name: h9
         native_vlan: demo
@@ -60,12 +60,19 @@ dps:
 
 acls:
   mir:
-  - rule:
+    - rule:
       actions:
         allow: 1
         mirror: 10
   block:
     - rule:
-
-        actions:
-          allow: 0
+      dl_type: 0x800     # ipv4
+      ipv4_dst: 10.0.0.5 # to h6
+      actions:
+        allow: 0         # block
+  blocked:
+    - rule:
+      dl_type: 0x800     # ipv4
+      ipv4_src: 10.0.0.5 # from h6
+      actions:
+        allow: 0         # block

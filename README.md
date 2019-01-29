@@ -18,6 +18,20 @@ The system will consist of the following elements...
 * Download and build [custom mininet docker container](https://github.com/scottkelso/docker-mininet)
 (See `./mininet.sh`)
 
+# Rule Writing
+Add a flow rule that will block a host by IP address.  Example here blocks traffic for host at `10.0.0.5`.
+```bash
+ovs-ofctl add-flow s1 ip,nw_dst=10.0.0.5,actions=drop
+ovs-ofctl add-flow s1 ip,nw_src=10.0.0.5,actions=drop
+```
+
+This is performed by the python file `./utils/rule_writer.py` which also maintains a blacklist of ip addresses that are being blocked.  This file achieves the same as above by editing the faucet.yaml file.  An example can be found at `setup/faucet.yaml`.
+
+To see all of the controllers current flow rules, use the following command in mininet.
+```bash
+ovs-ofctl dump-flows s1
+```
+
 # Related Work
 * https://github.com/scottkelso/sdn-security
 * https://github.com/a-blaise/split-and-merge
