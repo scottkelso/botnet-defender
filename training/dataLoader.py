@@ -25,6 +25,13 @@ def load_normal_data(path):
     return data
 
 
+def load_test_data(path):
+    print("Reading " + path + " as Test Traffic...")
+    data = pd.read_csv(path, sep=';')
+    data = remove_bad_data_normal(data)
+    return data
+
+
 def remove_bad_data(df):
     print("Dropping rows with wrong data...")
     # Remove unneeded columns
@@ -79,6 +86,7 @@ def remove_bad_data_normal(df):
     df = df[~df.Proto.str.contains("ipv6", na=False)]
     df = df[~df.Proto.str.contains("icmp", na=False)]
     df = df[~df.Proto.str.contains("llc", na=False)]
+    df = df[~df.Proto.str.contains("man", na=False)]
 
     # TODO(jk): Make ports null or negative number represented instead of dropping record
 
@@ -133,6 +141,17 @@ def encode_data(df):
     return data, labels
 
 
+def encode_unsupervised_data(data):
+    print("Transforming categorical data to numeric...")
+    enc = OrdinalEncoder()
+    data = enc.fit_transform(data)
+
+    print("Normalizing data...")
+    scaler = StandardScaler()
+    data = scaler.fit_transform(data)
+    return data
+
+
 def downsample(df, logging=False):
     if logging:
         print("Before resampling...")
@@ -185,6 +204,13 @@ def import_csvs():
     sam = load_normal_data('SamsungGalaxyTab.csv')
 
     return pd.concat([os, ser, am, aur, sam], sort=True)
+
+
+def preprocess_test_data(path):
+    data = load_test_data(path)
+    # TODO(jk): Stateful features
+    X = encode_unsupervised_data(data)
+    return X
 
 
 # os.shape
