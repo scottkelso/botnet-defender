@@ -5,7 +5,7 @@ from utils.rule_writer import RuleWriter
 class BlacklistTest(unittest.TestCase):
 
     def setup(self):
-        rw = RuleWriter('/etc/faucet/faucet.yaml')
+        rw = RuleWriter()
         rw.flush_blacklist()
         blacklist = rw.read_blacklist()
         self.assertEqual(len(blacklist), 0)
@@ -14,7 +14,7 @@ class BlacklistTest(unittest.TestCase):
 
     def test_read_blacklist(self):
         self.setup()
-        rw = RuleWriter('/etc/faucet/faucet.yaml')
+        rw = RuleWriter()
         blacklist = rw.read_blacklist()
         self.assertEqual(len(blacklist), 2)
         self.assertEqual(blacklist[0], '10.0.0.5')
@@ -22,7 +22,7 @@ class BlacklistTest(unittest.TestCase):
 
     def test_add_to_blacklist(self):
         self.setup()
-        rw = RuleWriter('/etc/faucet/faucet.yaml')
+        rw = RuleWriter()
         blacklist_before = rw.read_blacklist()
         response = rw.blacklist_ip('10.0.0.9')
         blacklist_after = rw.read_blacklist()
@@ -31,7 +31,7 @@ class BlacklistTest(unittest.TestCase):
 
     def test_add_to_blacklist_only_if_not_exists(self):
         self.setup()
-        rw = RuleWriter('/etc/faucet/faucet.yaml')
+        rw = RuleWriter()
         blacklist_before = rw.read_blacklist()
         response = rw.blacklist_ip('10.0.0.5')
         blacklist_after = rw.read_blacklist()
@@ -44,7 +44,7 @@ class BlacklistTest(unittest.TestCase):
 
     # TODO(jk)
     def test_block_ip_with_faucet(self):
-        # rw = RuleWriter('/etc/faucet/faucet.yaml')
+        # rw = RuleWriter()
         # rw.block_ip('10.0.0.5')
         self.assertTrue(True)
 
