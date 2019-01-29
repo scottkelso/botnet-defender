@@ -90,8 +90,8 @@ class RuleWriter:
         with open(self.blacklist_file, 'r') as f:
             blacklist = f.readlines()
         blacklist = [x.strip() for x in blacklist]
-        if len(blacklist) > 0:
-            blacklist.pop()
+        # if len(blacklist) > 0:
+        #     blacklist.pop()
         return blacklist
 
     def blacklist_ip(self, ip):
