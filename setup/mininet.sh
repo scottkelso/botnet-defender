@@ -20,6 +20,11 @@ sudo xhost +
 # Run Mininet
 cd ~/Documents/csc4006/docker-mininet
 docker build -t mininet .
+
+echo "" && echo "USE THE FOLLOWING COMMAND FOR MININET..." && echo ""
+echo "mn --topo single,10 --mac --controller=remote,ip=\$DOCKER_HOST,port=6653 --controller=remote,ip=\$DOCKER_HOST,port=6654 --switch ovsk"
+echo "" && echo ""
+
 #docker build --no-cache -t mininet .
 docker run -it --rm --privileged \
             -e DISPLAY -e DOCKER_HOST=$ip \
