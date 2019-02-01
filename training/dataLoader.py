@@ -17,18 +17,16 @@ def load_service_csv():
     return remove_bad_data(data)
 
 
-def load_normal_data(path):
-    print("Reading " + path + " as Normal Traffic...")
-    data = pd.read_csv('../../traffic/IoT/'+path, sep=';')
+def load_test_data(path):
+    print("Reading " + path + " as Test Traffic...")
+    data = pd.read_csv('../../traffic/IoT/'+path, sep=';', dtype={'Sport': np.object, 'Dport': np.object})
     data = remove_bad_data_normal(data)
-    data.category = "Normal"
     return data
 
 
-def load_test_data(path):
-    print("Reading " + path + " as Test Traffic...")
-    data = pd.read_csv(path, sep=';')
-    data = remove_bad_data_normal(data)
+def load_normal_data(path):
+    data = load_test_data(path)
+    data.category = "Normal"
     return data
 
 
@@ -209,7 +207,10 @@ def import_csvs():
 def preprocess_test_data(path):
     data = load_test_data(path)
     # TODO(jk): Stateful features
-    X = encode_unsupervised_data(data)
+    if len(data) > 0:
+        X = encode_unsupervised_data(data)
+    else:
+        X = None
     return X
 
 

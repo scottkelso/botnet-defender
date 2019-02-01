@@ -1,5 +1,8 @@
-import glob, os
+import glob
+import os
+
 from joblib import load
+
 from training.dataLoader import preprocess_test_data
 
 
@@ -14,21 +17,27 @@ def evaluate(file, filemove=True):
     print("Preprocessing " + file + " for ML...")
     data = preprocess_test_data(filepath)
 
-    print("Predicting " + file + " for botnet traffic...")
-    classifications = m.predict(data)
-    probabilities = m.predict_proba(data)
+    if data is not None:
+        print("Predicting " + file + " for botnet traffic...")
+        classifications = m.predict(data)
+        probabilities = m.predict_proba(data)
 
-    for i, prediction in enumerate(classifications):
-        print("[{0}] {1} with {2:.3f} probability".format(i, prediction, max(probabilities[i])))
+        for i, prediction in enumerate(classifications):
+            print("[{0}] {1} with {2:.3f} probability".format(i, prediction, max(probabilities[i])))
+    else:
+        print("File had no data.")
+    print("\n")
 
 
 m = load('../training/svm.joblib')
 
 traffic_dir = "../../traffic/"
 os.chdir("../../traffic/capture/")
+
+# while True:
 queue = []
 for file in glob.glob("*.csv"):
     queue.append(file)
 
 for testfile in queue:
-    evaluate(testfile, filemove=False)
+    evaluate(testfile, filemove=True)
