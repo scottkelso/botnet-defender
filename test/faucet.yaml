@@ -1,4 +1,35 @@
 acls:
+  block:
+  - rule:
+      actions:
+        allow: 0
+      dl_type: '0x800'
+      ipv4_dst: 10.0.0.5
+  - rule:
+      actions:
+        allow: 1
+      dl_type: '0x800'
+      ipv4_src: 10.0.0.5
+  - rule:
+      actions:
+        allow: 0
+      dl_type: '0x800'
+      ipv4_dst: 10.0.0.8
+  - rule:
+      actions:
+        allow: 1
+      dl_type: '0x800'
+      ipv4_src: 10.0.0.8
+  - rule:
+      actions:
+        allow: 0
+      dl_type: '0x800'
+      ipv4_dst: 10.0.0.7
+  - rule:
+      actions:
+        allow: 1
+      dl_type: '0x800'
+      ipv4_src: 10.0.0.7
   mir:
   - rule:
       actions:

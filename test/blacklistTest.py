@@ -38,14 +38,18 @@ class BlacklistTest(unittest.TestCase):
         self.assertFalse(response)
         self.assertEqual(blacklist_before, blacklist_after)
 
-    # TODO(jk)
-    def test_remove_from_blacklist(self):
-        self.assertTrue(True)
+    def test_flush_blacklist(self):
+        self.setup()
+        rw = RuleWriter()
+        blacklist_before = rw.read_blacklist()
+        self.assertGreater(len(blacklist_before), 0)
+        response = rw.flush_blacklist()
+        blacklist_after = rw.read_blacklist()
+        self.assertTrue(response)
+        self.assertEqual(len(blacklist_after), 0)
 
     # TODO(jk)
-    def test_block_ip_with_faucet(self):
-        # rw = RuleWriter()
-        # rw.block_ip('10.0.0.5')
+    def test_remove_from_blacklist(self):
         self.assertTrue(True)
 
 
