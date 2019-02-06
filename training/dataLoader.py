@@ -1,5 +1,6 @@
 from sklearn.utils import resample
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.preprocessing import OneHotEncoder, StandardScaler, MinMaxScaler, MaxAbsScaler
+from scipy.sparse import hstack
 
 import pandas as pd
 import numpy as np
@@ -13,12 +14,17 @@ def encode_data(df):
 
     print("Transforming categorical data to numeric...")
     # TODO(jk): Get OneHotEncoder working
-    enc = OneHotEncoder()
+    # https://stats.stackexchange.com/questions/267012/difference-between-preprocessing-train-and-test-set-before-and-after-splitting
+    enc = OneHotEncoder(dtype=np.float64, sparse=True)
     data = enc.fit_transform(data, y=labels)
 
     # print("Normalizing data...")
-    # scaler = StandardScaler()
+    # scaler = StandardScaler(with_mean=False)
     # data = scaler.fit_transform(data, y=labels)
+
+    print("Normalizing / Scaling data...")
+    transformer = MaxAbsScaler().fit(data, y=labels)
+    data = transformer.transform(data)
     return data, labels
 
 
@@ -27,9 +33,15 @@ def encode_unsupervised_data(data):
     enc = OneHotEncoder()
     data = enc.fit_transform(data)
 
+    # TODO(jk): This needs to be the same instance as was used for training data
     print("Normalizing data...")
-    scaler = StandardScaler()
+    scaler = StandardScaler(with_mean=False)
+    # TODO(jk): Should be scaler.transform(data) -> we should have fit only once on training
     data = scaler.fit_transform(data)
+
+    # print("Normalizing / Scaling data...")
+    # transformer = MaxAbsScaler().fit(data)
+    # data = transformer.transform(data)
     return data
 
 
@@ -38,18 +50,36 @@ def downsample(df, logging=False):
         print("Before resampling...")
         print(df.category.value_counts(), "\n")
 
+    # # Separate majority and minority classes
+    # df_majority = df[df.category == "Reconnaissance"]
+    # df_minority = df[df.category == "Normal"]
+
     # Separate majority and minority classes
-    df_majority = df[df.category == "Reconnaissance"]
-    df_minority = df[df.category == "Normal"]
+    df_reconnaissance = df[df.category == "Reconnaissance"]
+    df_normal = df[df.category == "Normal"]
+    minority_size = min(len(df_reconnaissance), len(df_normal))
 
-    # Downsample majority class
-    df_majority_downsampled = resample(df_majority,
-                                       replace=False,  # sample without replacement
-                                       n_samples=len(df_minority),  # to match minority class
-                                       random_state=123)  # reproducible results
+    if len(df_reconnaissance) > len(df_normal):
+        print("Downsampling Reconnaissance...")
+        # Downsample majority class
+        df_majority_downsampled = resample(df_reconnaissance,
+                                           replace=False,  # sample without replacement
+                                           n_samples=minority_size,  # to match minority class
+                                           random_state=123)  # reproducible results
 
-    # Combine minority class with downsampled majority class
-    df_downsampled = pd.concat([df_majority_downsampled, df_minority])
+        # Combine minority class with downsampled majority class
+        df_downsampled = pd.concat([df_majority_downsampled, df_normal])
+
+    else:
+        print("Downsampling Normal...")
+        # Downsample majority class
+        df_majority_downsampled = resample(df_normal,
+                                           replace=False,  # sample without replacement
+                                           n_samples=minority_size,  # to match minority class
+                                           random_state=123)  # reproducible results
+
+        # Combine minority class with downsampled majority class
+        df_downsampled = pd.concat([df_majority_downsampled, df_reconnaissance])
 
     # Display new class counts
     if logging:
@@ -132,6 +162,7 @@ def load_service_csv():
     return remove_bad_training_data(data)
 
 
+# TODO(jk): Fix paths used here.
 def load_test_data(path):
     print("Reading " + path + " as Test Traffic...")
     data = pd.read_csv('../../traffic/IoT/'+path, sep=';', dtype={'Sport': np.object, 'Dport': np.object})
@@ -139,9 +170,15 @@ def load_test_data(path):
     return data
 
 
+def load_test_data_full_path(path):
+    print("Reading full path " + path + " as Test Traffic...")
+    data = pd.read_csv("../"+path, sep=';', dtype={'Sport': np.object, 'Dport': np.object})
+    data = remove_bad_testing_data(data)
+    return data
+
+
 def load_normal_data(path):
     data = load_test_data(path)
-    # TODO(jk): Not adding column!
     data['category'] = "Normal"
     return data
 
@@ -156,6 +193,7 @@ def update_column_headers(data):
 
 
 def import_csvs():
+    # TODO(jk): Convert into loop
     os = update_column_headers(load_os_csv())
     print("Finished!\n")
     ser = update_column_headers(load_service_csv())
@@ -166,19 +204,39 @@ def import_csvs():
     print("Finished!\n")
     sam = load_normal_data('SamsungGalaxyTab.csv')
     print("Finished!\n")
+    iot1 = load_normal_data('18-05-29.pcap.csv')
+    print("Finished!\n")
+    iot2 = load_normal_data('18-05-31.pcap.csv')
+    print("Finished!\n")
+    iot3 = load_normal_data('18-06-10.pcap.csv')
+    print("Finished!\n")
+    iot4 = load_normal_data('18-06-12.pcap.csv')
+    print("Finished!\n")
+    iot5 = load_normal_data('18-06-13.pcap.csv')
+    print("Finished!\n")
+    iot6 = load_normal_data('18-06-15.pcap.csv')
+    print("Finished!\n")
+    iot7 = load_normal_data('18-06-16.pcap.csv')
+    print("Finished!\n")
+    iot8 = load_normal_data('18-06-17.pcap.csv')
+    print("Finished!\n")
+    iot9 = load_normal_data('18-06-18.pcap.csv')
+    print("Finished!\n")
+    iot10 = load_normal_data('18-06-19.pcap.csv')
+    print("Finished!\n")
 
-    return pd.concat([os, ser, am, aur, sam], sort=True)
+    return pd.concat([os, ser, am, aur, sam, iot1, iot2, iot3, iot4, iot5, iot6, iot7, iot8, iot9, iot10], sort=True)
 
 
 def get_data():
     data = import_csvs()
-    data = downsample(data, logging=False)
+    data = downsample(data, logging=True)
     X, y = encode_data(data)
     return X, y
 
 
 def preprocess_test_data(path):
-    data = load_test_data(path)
+    data = load_test_data_full_path(path)
     if len(data) > 0:
         X = encode_unsupervised_data(data)
     else:
@@ -213,3 +271,8 @@ def check_types(data):
     for col in data.columns:
         print(data[col].apply(lambda x: type(x)).value_counts())
         print()
+
+
+def get_src_ip(file, flow):
+    data = load_test_data(file)
+    return data.SrcAddr[flow]

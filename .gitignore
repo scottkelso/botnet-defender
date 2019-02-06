@@ -3,3 +3,4 @@ venv/
 .idea/
 data/*
 utils/__pycache__/*
+training/__pycache__/*
