@@ -24,6 +24,7 @@ class RuleWriter:
             obj_doc['acls']['block'] = []
             blocking_rules = obj_doc['acls']['block']
 
+            print("Writing " + str(len(blacklist)) + " rules...")
             for ip in blacklist:
                 blocking_rules.extend(
                     self.new_rule(ip)
@@ -78,6 +79,12 @@ class RuleWriter:
             with open(self.blacklist_file, 'a') as f:
                 f.write(ip + '\n')
             return True
+        else:
+            return False
+
+    def block_ip(self, ip):
+        if self.blacklist_ip(ip):
+            return self.write_rules()
         else:
             return False
 

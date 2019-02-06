@@ -3,13 +3,14 @@ import os
 
 from joblib import load
 
-from training.dataLoader import preprocess_test_data
+from training.dataLoader import preprocess_test_data, get_src_ip
+from utils.rule_writer import RuleWriter
 
 
-def evaluate(file, filemove=True):
+def evaluate(file, rulewriter, filemove=True):
     if filemove:
         print("Moving " + file + " for processing...")
-        os.rename(traffic_dir + "capture/" + file, traffic_dir + "processed/" + file)
+        os.rename(file, "../processed/" + file)
         filepath = traffic_dir + "processed/" + file
     else:
         filepath = traffic_dir + "capture/" + file
@@ -24,20 +25,25 @@ def evaluate(file, filemove=True):
 
         for i, prediction in enumerate(classifications):
             print("[{0}] {1} with {2:.3f} probability".format(i, prediction, max(probabilities[i])))
+            if prediction == "Reconnaissance":
+                ip = get_src_ip(file, i)
+                print("Blocking device with IP address "+ip)
+                rulewriter.blacklist_ip(ip)
     else:
         print("File had no data.")
     print("\n")
 
 
-m = load('../training/svm.joblib')
+m = load('training/svm.joblib')
 
-traffic_dir = "../../traffic/"
-os.chdir("../../traffic/capture/")
+traffic_dir = "../traffic/"
+os.chdir("../traffic/capture/")
 
 # while True:
+rw = RuleWriter(config_file='setup/faucet.yaml', blacklist_file='main/blacklist.txt')
 queue = []
 for file in glob.glob("*.csv"):
     queue.append(file)
 
 for testfile in queue:
-    evaluate(testfile, filemove=True)
+    evaluate(testfile, rw, filemove=True)
