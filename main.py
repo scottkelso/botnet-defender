@@ -3,11 +3,11 @@ import os
 
 from joblib import load
 
-from training.dataLoader import preprocess_test_data, get_src_ip
+from training.dataLoader import preprocess_test_data_without_encoding, get_src_ip, get_data_with_preprocessors
 from utils.rule_writer import RuleWriter
 
 
-def evaluate(file, rulewriter, filemove=True):
+def evaluate(file, rulewriter, enc, trans, filemove=True):
     if filemove:
         print("Moving " + file + " for processing...")
         os.rename(file, "../processed/" + file)
@@ -16,7 +16,9 @@ def evaluate(file, rulewriter, filemove=True):
         filepath = traffic_dir + "capture/" + file
 
     print("Preprocessing " + file + " for ML...")
-    data = preprocess_test_data(filepath)
+    data = preprocess_test_data_without_encoding(filepath)
+    data = enc.transform(data)
+    data = trans.transform(data)
 
     if data is not None:
         print("Predicting " + file + " for botnet traffic...")
@@ -34,6 +36,7 @@ def evaluate(file, rulewriter, filemove=True):
     print("\n")
 
 
+_, enc, trans = get_data_with_preprocessors()
 m = load('training/svm.joblib')
 
 traffic_dir = "../traffic/"
@@ -46,4 +49,4 @@ for file in glob.glob("*.csv"):
     queue.append(file)
 
 for testfile in queue:
-    evaluate(testfile, rw, filemove=True)
+    evaluate(testfile, rw, enc, trans, filemove=True)
