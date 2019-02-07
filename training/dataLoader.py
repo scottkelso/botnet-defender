@@ -1,6 +1,5 @@
 from sklearn.utils import resample
-from sklearn.preprocessing import OneHotEncoder, StandardScaler, MinMaxScaler, MaxAbsScaler
-from scipy.sparse import hstack
+from sklearn.preprocessing import OneHotEncoder, StandardScaler, MinMaxScaler, MaxAbsScaler, OrdinalEncoder
 
 import pandas as pd
 import numpy as np
@@ -13,10 +12,10 @@ def encode_data(df):
     labels = df['category']
 
     print("Transforming categorical data to numeric...")
-    # TODO(jk): Get OneHotEncoder working
+    # TODO(jk): Encode some columns individually - see encodingSandpit.py
     # https://stats.stackexchange.com/questions/267012/difference-between-preprocessing-train-and-test-set-before-and-after-splitting
-    enc = OneHotEncoder(dtype=np.float64, sparse=True)
-    data = enc.fit_transform(data, y=labels)
+    encoder = OneHotEncoder(handle_unknown='ignore')
+    data = encoder.fit_transform(data, y=labels)
 
     # print("Normalizing data...")
     # scaler = StandardScaler(with_mean=False)
@@ -25,23 +24,21 @@ def encode_data(df):
     print("Normalizing / Scaling data...")
     transformer = MaxAbsScaler().fit(data, y=labels)
     data = transformer.transform(data)
-    return data, labels
+    return data, labels, encoder, None
 
 
 def encode_unsupervised_data(data):
     print("Transforming categorical data to numeric...")
-    enc = OneHotEncoder()
+    enc = OneHotEncoder(handle_unknown='ignore')
     data = enc.fit_transform(data)
 
-    # TODO(jk): This needs to be the same instance as was used for training data
-    print("Normalizing data...")
-    scaler = StandardScaler(with_mean=False)
-    # TODO(jk): Should be scaler.transform(data) -> we should have fit only once on training
-    data = scaler.fit_transform(data)
+    # print("Normalizing data...")
+    # scaler = StandardScaler(with_mean=False)
+    # data = scaler.fit_transform(data)
 
-    # print("Normalizing / Scaling data...")
-    # transformer = MaxAbsScaler().fit(data)
-    # data = transformer.transform(data)
+    print("Normalizing / Scaling data...")
+    transformer = MaxAbsScaler().fit(data)
+    data = transformer.transform(data)
     return data
 
 
@@ -80,6 +77,41 @@ def downsample(df, logging=False):
 
         # Combine minority class with downsampled majority class
         df_downsampled = pd.concat([df_majority_downsampled, df_reconnaissance])
+
+    # Display new class counts
+    if logging:
+        print("After resampling...")
+        print(df_downsampled.category.value_counts(), "\n")
+
+    return df_downsampled
+
+
+def downsample_size(df, size, logging=False):
+    if logging:
+        print("Before resampling...")
+        print(df.category.value_counts(), "\n")
+
+    # Separate majority and minority classes
+    df_reconnaissance = df[df.category == "Reconnaissance"]
+    df_normal = df[df.category == "Normal"]
+    minority_size = min(len(df_reconnaissance), len(df_normal))
+
+    print("Downsampling Reconnaissance...")
+    # Downsample majority class
+    df_reconnaissance_downsampled = resample(df_reconnaissance,
+                                       replace=False,  # sample without replacement
+                                       n_samples=size,  # to match minority class
+                                       random_state=123)  # reproducible results
+
+    print("Downsampling Normal...")
+    # Downsample majority class
+    df_normal_downsampled = resample(df_normal,
+                                       replace=False,  # sample without replacement
+                                       n_samples=size,  # to match minority class
+                                       random_state=123)  # reproducible results
+
+    # Combine minority class with downsampled majority class
+    df_downsampled = pd.concat([df_normal_downsampled, df_reconnaissance_downsampled])
 
     # Display new class counts
     if logging:
@@ -230,9 +262,16 @@ def import_csvs():
 
 def get_data():
     data = import_csvs()
-    data = downsample(data, logging=True)
-    X, y = encode_data(data)
+    data = downsample_size(data, 10000, logging=True)
+    X, y, _, _ = encode_data(data)
     return X, y
+
+
+def get_data_with_preprocessors():
+    data = import_csvs()
+    data = downsample(data, logging=True)
+    X, y, enc, trans = encode_data(data)
+    return data, enc, trans
 
 
 def preprocess_test_data(path):
@@ -242,6 +281,11 @@ def preprocess_test_data(path):
     else:
         X = None
     return X
+
+
+def preprocess_test_data_without_encoding(path):
+    data = load_test_data_full_path(path)
+    return data
 
 
 def has_nan_values(data):

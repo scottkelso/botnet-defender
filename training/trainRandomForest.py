@@ -10,7 +10,7 @@ X, y = get_data()
 # Split the data into training, validation, and testing sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
 
-print("Training SVC Model...")
+print("Training Random Forest Model...")
 clf = RandomForestClassifier(n_estimators=10)
 
 t0 = time.time()
@@ -38,4 +38,4 @@ print("Calculating Simple Accuracy...")
 predictions = clf.predict(X_test)
 print("Accuracy:", accuracy_score(y_test, predictions))
 
-dump(clf, 'svm.joblib')
+# dump(clf, 'randomforest.joblib')

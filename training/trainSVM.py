@@ -38,4 +38,4 @@ print("Calculating Simple Accuracy...")
 predictions = clf.predict(X_test)
 print("Accuracy:", accuracy_score(y_test, predictions))
 
-dump(clf, 'svm.joblib')
+# dump(clf, 'svm.joblib')

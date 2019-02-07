@@ -10,8 +10,9 @@ X, y = get_data()
 # Split the data into training, validation, and testing sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
 
-print("Training SVC Model...")
-clf = neighbors.KNeighborsClassifier(15, weights='uniform')
+print("Training KNN Model...")
+# clf = neighbors.KNeighborsClassifier(n_neighbors=3)
+clf = neighbors.KNeighborsClassifier(n_neighbors=3)
 
 t0 = time.time()
 clf.fit(X_train, y_train)
@@ -28,8 +29,12 @@ print("Training Finished in "+str(total)+" seconds!")
 # print("F1 score:", f1_score(X_test, predictions, average='weighted'))
 
 print("Calculating Simple Accuracy...")
+t0 = time.time()
 predictions = clf.predict(X_test)
+t1 = time.time()
+total = t1-t0
+print("Predicting Finished in "+str(total)+" seconds!")
 
 print("Accuracy:", accuracy_score(y_test, predictions))
 
-dump(clf, 'knn.joblib')
+# dump(clf, 'knn.joblib')
