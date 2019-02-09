@@ -12,7 +12,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 
 print("Training KNN Model...")
 # clf = neighbors.KNeighborsClassifier(n_neighbors=3)
-clf = neighbors.KNeighborsClassifier(n_neighbors=3)
+clf = neighbors.KNeighborsClassifier()
 
 t0 = time.time()
 clf.fit(X_train, y_train)
@@ -34,7 +34,6 @@ predictions = clf.predict(X_test)
 t1 = time.time()
 total = t1-t0
 print("Predicting Finished in "+str(total)+" seconds!")
-
 print("Accuracy:", accuracy_score(y_test, predictions))
 
 # dump(clf, 'knn.joblib')

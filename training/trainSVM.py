@@ -17,7 +17,7 @@ t0 = time.time()
 clf.fit(X_train, y_train)
 t1 = time.time()
 total = t1-t0
-print("Training Finished in "+str(total)+" seconds!")
+print("Training Finished in "+str(round(total, 2))+" seconds!")
 
 #
 # # # Evaulate the model on the augmented test data
@@ -35,7 +35,11 @@ print("Training Finished in "+str(total)+" seconds!")
 # print("Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2))
 
 print("Calculating Simple Accuracy...")
+t0 = time.time()
 predictions = clf.predict(X_test)
+t1 = time.time()
+total = t1-t0
+print("Predicting Finished in "+str(total)+" seconds!")
 print("Accuracy:", accuracy_score(y_test, predictions))
 
 # dump(clf, 'svm.joblib')

@@ -4,8 +4,64 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler, MinMaxScaler, M
 import pandas as pd
 import numpy as np
 
+import logging
+
 
 # TODO(jk): Stateful features
+def convert(x):
+    try:
+        val = int(x)
+    except ValueError:
+        try:
+            val = int(x, 16)
+        except ValueError:
+            val = -2
+    return val
+
+
+def encode_data_advanced(df):
+
+    labels = df['category']
+    num_data = df[['DstBytes', 'DstPkts', 'DstRate', 'Dur', 'Max', 'Mean', 'Min', 'Rate', 'SrcBytes', 'SrcPkts',
+                   'SrcRate', 'StdDev', 'Sum', 'TotBytes', 'TotPkts']]
+    # cat_data = df[['Dir', 'DstAddr', 'SrcAddr']]
+    cat_data = df[['Dir']]
+    cat_data_ports = df[['Dport', 'Sport']]
+    cat_data_restrict = df[['Proto', 'State', 'Flgs']]
+
+    # Minus 2 because dropped ip addresses
+    assert df.shape[1] - 2 == \
+           num_data.shape[1] + cat_data.shape[1] + cat_data_ports.shape[1] + cat_data_restrict.shape[1] + 1
+
+    print("Striping spaces from character data...")
+    cat_data.Dir = cat_data.Dir.str.strip()
+    cat_data_restrict.Flgs = cat_data_restrict.Flgs.str.strip()
+
+    print("Transforming unrestricted categorical data to numeric...")
+    cat_data_ports = cat_data_ports.applymap(convert)
+
+    encoder = OneHotEncoder(handle_unknown='ignore', sparse=False)
+    enc_data = encoder.fit_transform(cat_data, y=labels)
+
+    print("Transforming restricted categorical data to numeric...")
+    # Data has too many categories, therefore reduce to defined options or unknown
+    flags = ['e', 'e s', 'eU', 'eT']
+    proto = ['tcp', 'udp', 'arp', 'icmp']
+    state = ['RST', 'CON', 'REQ', 'INT', 'FIN', 'ECO']
+    encoder = OneHotEncoder(handle_unknown='ignore', sparse=False, categories=[flags, proto, state])
+    enc_data_restrict = encoder.fit_transform(cat_data_restrict, y=labels)
+
+    data = np.concatenate([enc_data, enc_data_restrict, cat_data_ports.values, num_data.values], axis=1)
+
+    # print("Normalizing data...")
+    # scaler = StandardScaler(with_mean=False)
+    # data = scaler.fit_transform(data, y=labels)
+
+    # print("Normalizing / Scaling data...")
+    # transformer = MaxAbsScaler().fit(data, y=labels)
+    # data = transformer.transform(data)
+    return data, labels, encoder, None
+
 
 def encode_data(df):
     data = df.drop(columns=['category'])
@@ -42,10 +98,9 @@ def encode_unsupervised_data(data):
     return data
 
 
-def downsample(df, logging=False):
-    if logging:
-        print("Before resampling...")
-        print(df.category.value_counts(), "\n")
+def downsample(df):
+    logging.info("Before resampling...")
+    logging.info(df.category.value_counts(), "\n")
 
     # # Separate majority and minority classes
     # df_majority = df[df.category == "Reconnaissance"]
@@ -79,9 +134,8 @@ def downsample(df, logging=False):
         df_downsampled = pd.concat([df_majority_downsampled, df_reconnaissance])
 
     # Display new class counts
-    if logging:
-        print("After resampling...")
-        print(df_downsampled.category.value_counts(), "\n")
+    logging.info("After resampling...")
+    logging.info(df_downsampled.category.value_counts(), "\n")
 
     return df_downsampled
 
@@ -136,7 +190,8 @@ def remove_bad_training_data(df):
          'smac',
          'seq',
          'stime',
-         'ltime'], axis=1
+         'ltime',
+         'srcid'], axis=1
     )
 
     # Drop all man packets
@@ -165,7 +220,8 @@ def remove_bad_testing_data(df):
          'SrcMac',
          'Seq',
          'StartTime',
-         'LastTime'], axis=1
+         'LastTime',
+         'SrcId'], axis=1
     )
 
     # Drop all man packets
@@ -217,7 +273,7 @@ def load_normal_data(path):
 
 def update_column_headers(data):
     data.columns = ['Flgs', 'Proto', 'SrcAddr', 'Sport', 'Dir', 'DstAddr',
-       'Dport', 'TotPkts', 'TotBytes', 'State', 'SrcId', 'Dur',
+       'Dport', 'TotPkts', 'TotBytes', 'State', 'Dur',
        'Mean', 'StdDev', 'Sum', 'Min', 'Max', 'SrcPkts', 'DstPkts', 'SrcBytes',
        'DstBytes', 'Rate', 'SrcRate', 'DstRate', 'category']
 
@@ -226,6 +282,7 @@ def update_column_headers(data):
 
 def import_csvs():
     # TODO(jk): Convert into loop
+    # TODO(jk): Mix some other benign traces
     os = update_column_headers(load_os_csv())
     print("Finished!\n")
     ser = update_column_headers(load_service_csv())
@@ -262,14 +319,15 @@ def import_csvs():
 
 def get_data():
     data = import_csvs()
-    data = downsample_size(data, 10000, logging=True)
-    X, y, _, _ = encode_data(data)
+    data = downsample_size(data, 500000)
+    X, y, _, _ = encode_data_advanced(data)
     return X, y
 
 
+# TODO(jk): Remove in favour of using get_data
 def get_data_with_preprocessors():
     data = import_csvs()
-    data = downsample(data, logging=True)
+    data = downsample(data)
     X, y, enc, trans = encode_data(data)
     return data, enc, trans
 
@@ -312,9 +370,12 @@ def has_nan_values(data):
 #             print(col + " had an error message")
 
 def check_types(data):
-    for col in data.columns:
-        print(data[col].apply(lambda x: type(x)).value_counts())
-        print()
+    try:
+        for col in data.columns:
+            print(data[col].apply(lambda x: type(x)).value_counts())
+    except AttributeError:
+        for i in range(data.shape[1]):
+            print(data[i].apply(lambda x: type(x)).value_counts())
 
 
 def get_src_ip(file, flow):
