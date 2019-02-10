@@ -6,7 +6,6 @@ import numpy as np
 
 import logging
 
-
 # TODO(jk): Stateful features
 def convert(x):
     try:
@@ -20,7 +19,6 @@ def convert(x):
 
 
 def encode_data_advanced(df):
-
     labels = df['category']
     num_data = df[['DstBytes', 'DstPkts', 'DstRate', 'Dur', 'Max', 'Mean', 'Min', 'Rate', 'SrcBytes', 'SrcPkts',
                    'SrcRate', 'StdDev', 'Sum', 'TotBytes', 'TotPkts']]
@@ -28,20 +26,24 @@ def encode_data_advanced(df):
     cat_data = df[['Dir']]
     cat_data_ports = df[['Dport', 'Sport']]
     cat_data_restrict = df[['Proto', 'State', 'Flgs']]
+    transformers = []
 
-    # Minus 2 because dropped ip addresses
+    # Minus 2 because dropped ip addresses & plus 1 for category column
     assert df.shape[1] - 2 == \
            num_data.shape[1] + cat_data.shape[1] + cat_data_ports.shape[1] + cat_data_restrict.shape[1] + 1
 
     print("Striping spaces from character data...")
-    cat_data.Dir = cat_data.Dir.str.strip()
-    cat_data_restrict.Flgs = cat_data_restrict.Flgs.str.strip()
+    # TODO(jk): https://stackoverflow.com/questions/43683874/settingwithcopywarning-when-modifying-a-single-column-in-pandas
+    cat_data.Dir = cat_data.copy().Dir.str.strip()
+    # cat_data_restrict.Flgs = cat_data_restrict.Flgs.copy().str.strip()
+    cat_data_restrict.Flgs = cat_data_restrict.copy().Flgs.str.strip()
 
     print("Transforming unrestricted categorical data to numeric...")
     cat_data_ports = cat_data_ports.applymap(convert)
 
     encoder = OneHotEncoder(handle_unknown='ignore', sparse=False)
     enc_data = encoder.fit_transform(cat_data, y=labels)
+    transformers.append(encoder)
 
     print("Transforming restricted categorical data to numeric...")
     # Data has too many categories, therefore reduce to defined options or unknown
@@ -50,6 +52,7 @@ def encode_data_advanced(df):
     state = ['RST', 'CON', 'REQ', 'INT', 'FIN', 'ECO']
     encoder = OneHotEncoder(handle_unknown='ignore', sparse=False, categories=[flags, proto, state])
     enc_data_restrict = encoder.fit_transform(cat_data_restrict, y=labels)
+    transformers.append(encoder)
 
     data = np.concatenate([enc_data, enc_data_restrict, cat_data_ports.values, num_data.values], axis=1)
 
@@ -60,7 +63,45 @@ def encode_data_advanced(df):
     # print("Normalizing / Scaling data...")
     # transformer = MaxAbsScaler().fit(data, y=labels)
     # data = transformer.transform(data)
-    return data, labels, encoder, None
+    return data, labels, transformers
+
+
+def encode_unsupervised_data_advanced(df, transformers):
+    num_data = df[['DstBytes', 'DstPkts', 'DstRate', 'Dur', 'Max', 'Mean', 'Min', 'Rate', 'SrcBytes', 'SrcPkts',
+                   'SrcRate', 'StdDev', 'Sum', 'TotBytes', 'TotPkts']]
+    # cat_data = df[['Dir', 'DstAddr', 'SrcAddr']]
+    cat_data = df[['Dir']]
+    cat_data_ports = df[['Dport', 'Sport']]
+    cat_data_restrict = df[['Proto', 'State', 'Flgs']]
+
+    # Minus 2 because dropped ip addresses
+    assert df.shape[1] - 2 == \
+           num_data.shape[1] + cat_data.shape[1] + cat_data_ports.shape[1] + cat_data_restrict.shape[1]
+
+    print("Striping spaces from character data...")
+    # TODO(jk): https://stackoverflow.com/questions/43683874/settingwithcopywarning-when-modifying-a-single-column-in-pandas
+    cat_data.Dir = cat_data.Dir.str.strip()
+    cat_data_restrict.Flgs = cat_data_restrict.Flgs.str.strip()
+
+    print("Transforming unrestricted categorical data to numeric...")
+    cat_data_ports = cat_data_ports.applymap(convert)
+
+    enc_data = transformers.pop().transform(cat_data)
+
+    print("Transforming restricted categorical data to numeric...")
+    # Data has too many categories, therefore reduce to defined options or unknown
+    enc_data_restrict = transformers.pop().transform(cat_data_restrict)
+
+    data = np.concatenate([enc_data, enc_data_restrict, cat_data_ports.values, num_data.values], axis=1)
+
+    # print("Normalizing data...")
+    # scaler = StandardScaler(with_mean=False)
+    # data = scaler.fit_transform(data, y=labels)
+
+    # print("Normalizing / Scaling data...")
+    # transformer = MaxAbsScaler().fit(data, y=labels)
+    # data = transformer.transform(data)
+    return data
 
 
 def encode_data(df):
@@ -141,36 +182,34 @@ def downsample(df):
 
 
 def downsample_size(df, size, logging=False):
-    if logging:
-        print("Before resampling...")
-        print(df.category.value_counts(), "\n")
+    print("Downsampling with size " + size + "...")
+    logging.info("Before resampling...")
+    logging.info(df.category.value_counts(), "\n")
 
     # Separate majority and minority classes
     df_reconnaissance = df[df.category == "Reconnaissance"]
     df_normal = df[df.category == "Normal"]
-    minority_size = min(len(df_reconnaissance), len(df_normal))
 
     print("Downsampling Reconnaissance...")
     # Downsample majority class
     df_reconnaissance_downsampled = resample(df_reconnaissance,
-                                       replace=False,  # sample without replacement
-                                       n_samples=size,  # to match minority class
-                                       random_state=123)  # reproducible results
+                                             replace=False,  # sample without replacement
+                                             n_samples=size,  # to match minority class
+                                             random_state=123)  # reproducible results
 
     print("Downsampling Normal...")
     # Downsample majority class
     df_normal_downsampled = resample(df_normal,
-                                       replace=False,  # sample without replacement
-                                       n_samples=size,  # to match minority class
-                                       random_state=123)  # reproducible results
+                                     replace=False,  # sample without replacement
+                                     n_samples=size,  # to match minority class
+                                     random_state=123)  # reproducible results
 
     # Combine minority class with downsampled majority class
     df_downsampled = pd.concat([df_normal_downsampled, df_reconnaissance_downsampled])
 
     # Display new class counts
-    if logging:
-        print("After resampling...")
-        print(df_downsampled.category.value_counts(), "\n")
+    logging.info("After resampling...")
+    logging.info(df_downsampled.category.value_counts(), "\n")
 
     return df_downsampled
 
@@ -253,14 +292,14 @@ def load_service_csv():
 # TODO(jk): Fix paths used here.
 def load_test_data(path):
     print("Reading " + path + " as Test Traffic...")
-    data = pd.read_csv('../../traffic/IoT/'+path, sep=';', dtype={'Sport': np.object, 'Dport': np.object})
+    data = pd.read_csv('../../traffic/IoT/' + path, sep=';', dtype={'Sport': np.object, 'Dport': np.object, 'Dir': np.object, 'Flgs': np.object})
     data = remove_bad_testing_data(data)
     return data
 
 
 def load_test_data_full_path(path):
     print("Reading full path " + path + " as Test Traffic...")
-    data = pd.read_csv("../"+path, sep=';', dtype={'Sport': np.object, 'Dport': np.object})
+    data = pd.read_csv(path, sep=';', dtype={'Sport': np.object, 'Dport': np.object, 'Dir': np.object, 'Flgs': np.object})
     data = remove_bad_testing_data(data)
     return data
 
@@ -273,9 +312,9 @@ def load_normal_data(path):
 
 def update_column_headers(data):
     data.columns = ['Flgs', 'Proto', 'SrcAddr', 'Sport', 'Dir', 'DstAddr',
-       'Dport', 'TotPkts', 'TotBytes', 'State', 'Dur',
-       'Mean', 'StdDev', 'Sum', 'Min', 'Max', 'SrcPkts', 'DstPkts', 'SrcBytes',
-       'DstBytes', 'Rate', 'SrcRate', 'DstRate', 'category']
+                    'Dport', 'TotPkts', 'TotBytes', 'State', 'Dur',
+                    'Mean', 'StdDev', 'Sum', 'Min', 'Max', 'SrcPkts', 'DstPkts', 'SrcBytes',
+                    'DstBytes', 'Rate', 'SrcRate', 'DstRate', 'category']
 
     return data
 
@@ -320,16 +359,8 @@ def import_csvs():
 def get_data():
     data = import_csvs()
     data = downsample_size(data, 500000)
-    X, y, _, _ = encode_data_advanced(data)
-    return X, y
-
-
-# TODO(jk): Remove in favour of using get_data
-def get_data_with_preprocessors():
-    data = import_csvs()
-    data = downsample(data)
-    X, y, enc, trans = encode_data(data)
-    return data, enc, trans
+    X, y, transformers = encode_data_advanced(data)
+    return X, y, transformers
 
 
 def preprocess_test_data(path):

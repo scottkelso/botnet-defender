@@ -5,7 +5,7 @@ from joblib import dump
 from training.dataLoader import get_data
 import time
 
-X, y = get_data()
+X, y, _ = get_data()
 
 # Split the data into training, validation, and testing sets
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
